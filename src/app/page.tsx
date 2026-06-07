@@ -9,20 +9,17 @@ import { WeatherHero } from '@/components/weather/WeatherHero';
 import { ForecastStrip } from '@/components/weather/ForecastStrip';
 import { HourlyChart } from '@/components/weather/HourlyChart';
 import { StatRow } from '@/components/weather/StatRow';
-import { AqiGauge } from '@/components/aqi/AqiGauge';
-import { PollutantGrid } from '@/components/aqi/PollutantGrid';
 import { CityCard } from '@/components/search/CityCard';
-import { WeatherHeroSkeleton, AqiSkeleton, ForecastSkeleton } from '@/components/ui/Skeleton';
+import { WeatherHeroSkeleton, ForecastSkeleton } from '@/components/ui/Skeleton';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 
-const AUTO_REFRESH_MS = 10 * 60 * 1000; // 10 minutes
+const AUTO_REFRESH_MS = 10 * 60 * 1000;
 
 export default function HomePage() {
   const dispatch = useDispatch<AppDispatch>();
   const { coords, permissionStatus, cityName, requestLocation } = useGeolocation();
   const pinnedCities = useSelector((s: RootState) => s.cities.pinned);
 
-  // Determine active location key
   const locationKey = coords ? `${coords.lat},${coords.lng}` : null;
   const weatherData = useSelector((s: RootState) =>
     locationKey ? s.weather.cache[locationKey] : null
@@ -31,7 +28,6 @@ export default function HomePage() {
     locationKey ? s.weather.loading[locationKey] : false
   );
 
-  // Fetch AQI separately (stored in component state for simplicity)
   const fetchData = useCallback(async () => {
     if (!coords) return;
     dispatch(fetchWeatherThunk({ lat: coords.lat, lng: coords.lng }));
@@ -44,54 +40,74 @@ export default function HomePage() {
   }, [fetchData]);
 
   const hasLocation = !!coords;
+  const permissionPending = permissionStatus === 'idle' || permissionStatus === 'requesting';
+  const permissionDenied = permissionStatus === 'denied' || permissionStatus === 'unavailable';
 
   return (
     <div className="space-y-8">
-      {/* Location Banner */}
-      {permissionStatus === 'idle' || permissionStatus === 'requesting' ? (
-        <div className="rounded-2xl bg-blue-500/10 border border-blue-500/20 p-5 flex items-center justify-between gap-4">
+      {/* Location permission banner */}
+      {permissionPending && (
+        <div
+          className="rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+          style={{
+            background: 'rgba(0,122,255,0.08)',
+            border: '1px solid rgba(0,122,255,0.18)',
+          }}
+        >
           <div className="flex items-center gap-3">
-            <span className="text-2xl">📍</span>
+            <span className="text-2xl flex-shrink-0">📍</span>
             <div>
-              <p className="text-white font-medium">Enable location for local weather</p>
-              <p className="text-white/50 text-sm">Or browse pinned cities below</p>
+              <p className="font-semibold text-sm" style={{ color: 'var(--text)' }}>
+                Enable location for local weather
+              </p>
+              <p className="text-sm mt-0.5" style={{ color: 'var(--text-3)' }}>
+                Or search for any city using the bar above
+              </p>
             </div>
           </div>
           <button
             onClick={requestLocation}
             disabled={permissionStatus === 'requesting'}
-            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white rounded-xl text-sm font-medium transition-colors flex-shrink-0"
+            className="px-4 py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-50 flex-shrink-0 active:scale-95"
+            style={{ background: 'var(--accent)', color: '#fff' }}
           >
-            {permissionStatus === 'requesting' ? 'Locating...' : 'Use My Location'}
+            {permissionStatus === 'requesting' ? 'Locating…' : 'Use My Location'}
           </button>
         </div>
-      ) : permissionStatus === 'denied' || permissionStatus === 'unavailable' ? (
-        <div className="rounded-2xl bg-amber-500/10 border border-amber-500/20 p-4 flex items-center gap-3">
-          <span className="text-xl">⚠️</span>
-          <p className="text-white/70 text-sm">
-            Location access denied. Showing pinned cities. Enable location in browser settings to see local weather.
+      )}
+
+      {permissionDenied && (
+        <div
+          className="rounded-2xl p-4 flex items-start gap-3"
+          style={{
+            background: 'rgba(234,179,8,0.08)',
+            border: '1px solid rgba(234,179,8,0.18)',
+          }}
+        >
+          <span className="text-lg flex-shrink-0">⚠️</span>
+          <p className="text-sm" style={{ color: 'var(--text-2)' }}>
+            Location access denied. Search for any city using the bar above, or enable location in browser settings.
           </p>
         </div>
-      ) : null}
+      )}
 
-      {/* Main Weather (user location) */}
+      {/* Current location weather */}
       {hasLocation && (
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-white/60 text-sm font-medium uppercase tracking-wider">
-              📍 Your Location
-            </h2>
-            <span className="text-white/30 text-xs">{cityName}</span>
+        <section className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>
+              Your Location
+            </span>
+            {cityName && (
+              <span className="text-xs" style={{ color: 'var(--text-4)' }}>{cityName}</span>
+            )}
           </div>
 
           <ErrorBoundary>
             {weatherLoading && !weatherData ? (
               <WeatherHeroSkeleton />
             ) : weatherData ? (
-              <WeatherHero
-                data={weatherData}
-                cityName={cityName ?? 'Your Location'}
-              />
+              <WeatherHero data={weatherData} cityName={cityName ?? 'Your Location'} />
             ) : null}
           </ErrorBoundary>
 
@@ -115,13 +131,18 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* Pinned Cities Grid */}
+      {/* Pinned / default cities */}
       {pinnedCities.length > 0 && (
-        <section className="space-y-4">
-          <h2 className="text-white/60 text-sm font-medium uppercase tracking-wider">
-            🏙️ Cities ({pinnedCities.length})
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <section className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>
+              Cities
+            </span>
+            <span className="text-xs" style={{ color: 'var(--text-4)' }}>
+              Tap a card to see details
+            </span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
             {pinnedCities.map((city) => (
               <ErrorBoundary key={city.id}>
                 <CityCard city={city} />
@@ -133,10 +154,12 @@ export default function HomePage() {
 
       {/* Empty state */}
       {!hasLocation && pinnedCities.length === 0 && (
-        <div className="text-center py-24 space-y-4">
+        <div className="text-center py-20 space-y-4">
           <span className="text-6xl block">🌍</span>
-          <h3 className="text-white text-xl font-semibold">No cities yet</h3>
-          <p className="text-white/40">Search for a city above or enable location access</p>
+          <h3 className="text-xl font-bold" style={{ color: 'var(--text)' }}>No cities yet</h3>
+          <p className="text-sm" style={{ color: 'var(--text-3)' }}>
+            Search for a city above or enable location access
+          </p>
         </div>
       )}
     </div>

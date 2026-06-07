@@ -23,20 +23,26 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error('ErrorBoundary caught:', error, info);
+    console.error('[ErrorBoundary]', error, info);
   }
 
   render() {
     if (this.state.hasError) {
       if (this.props.fallback) return this.props.fallback;
       return (
-        <div className="rounded-2xl bg-red-500/10 border border-red-500/20 p-6 text-center">
-          <div className="text-4xl mb-3">⚠️</div>
-          <h3 className="text-red-400 font-semibold text-lg mb-1">Something went wrong</h3>
-          <p className="text-white/50 text-sm mb-4">{this.state.error?.message}</p>
+        <div
+          className="rounded-2xl p-6 text-center"
+          style={{ background: '#ef444410', border: '1px solid #ef444425' }}
+        >
+          <div className="text-3xl mb-3">⚠️</div>
+          <h3 className="font-semibold text-base mb-1 text-red-400">Something went wrong</h3>
+          <p className="text-sm mb-4" style={{ color: 'var(--text-3)' }}>
+            {this.state.error?.message}
+          </p>
           <button
             onClick={() => this.setState({ hasError: false, error: null })}
-            className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg text-sm transition-colors"
+            className="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors text-red-400"
+            style={{ background: '#ef444420' }}
           >
             Try again
           </button>
