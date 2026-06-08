@@ -45,14 +45,23 @@ export function StatRow({ data }: StatRowProps) {
       {stats.map((stat) => (
         <div
           key={stat.label}
-          className="rounded-xl bg-white/5 border border-white/10 p-4 hover:bg-white/8 transition-colors"
+          className="rounded-xl p-4 transition-colors"
+          style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            boxShadow: 'var(--shadow)',
+          }}
         >
-          <div className="flex items-center gap-2 mb-2">
-            <span>{stat.icon}</span>
-            <span className="text-white/50 text-xs uppercase tracking-wide">{stat.label}</span>
+          <div className="flex items-center gap-1.5 mb-2">
+            <span className="text-sm">{stat.icon}</span>
+            <span className="text-[11px] uppercase tracking-wide font-semibold" style={{ color: 'var(--text-3)' }}>
+              {stat.label}
+            </span>
           </div>
-          <p className="text-white font-semibold text-lg mb-3">{stat.value}</p>
-          <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+          <p className="font-bold text-base mb-3 truncate" style={{ color: 'var(--text)' }}>
+            {stat.value}
+          </p>
+          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border-strong)' }}>
             <div
               className="h-full rounded-full transition-all duration-700"
               style={{ width: `${stat.bar}%`, background: stat.barColor }}

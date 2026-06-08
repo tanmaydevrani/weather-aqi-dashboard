@@ -1,9 +1,16 @@
 'use client';
 
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Legend,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
 } from 'recharts';
+import { useTheme } from '@/components/layout/ThemeProvider';
 import type { WeatherData } from '@/types/weather.d';
 
 interface HourlyChartProps {
@@ -12,25 +19,43 @@ interface HourlyChartProps {
 
 export function HourlyChart({ data }: HourlyChartProps) {
   const { hourly } = data;
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
-  // Show next 24 hours
   const chartData = hourly.time.slice(0, 24).map((time, i) => ({
-    time: new Date(time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }),
+    time: new Date(time).toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    }),
     temp: Math.round(hourly.temperature_2m[i]),
     wind: Math.round(hourly.wind_speed_10m[i]),
     rain: hourly.precipitation_probability[i],
   }));
 
+  const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+  const axisColor = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)';
+  const tooltipBg = isDark ? '#0f0f15' : '#ffffff';
+  const tooltipBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
+  const tooltipText = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)';
+  const labelText = isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)';
+
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
     return (
-      <div className="bg-gray-900 border border-white/10 rounded-xl p-3 text-sm shadow-xl">
-        <p className="text-white/50 text-xs mb-2">{label}</p>
+      <div
+        className="rounded-xl p-3 text-sm shadow-xl"
+        style={{ background: tooltipBg, border: `1px solid ${tooltipBorder}` }}
+      >
+        <p className="text-xs mb-2" style={{ color: tooltipText }}>{label}</p>
         {payload.map((entry: any) => (
-          <div key={entry.name} className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full" style={{ background: entry.color }} />
-            <span className="text-white/70">{entry.name}:</span>
-            <span className="text-white font-medium">{entry.value}{entry.name === 'Temp' ? '°C' : entry.name === 'Wind' ? ' km/h' : '%'}</span>
+          <div key={entry.name} className="flex items-center gap-2 mb-0.5">
+            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: entry.color }} />
+            <span className="text-xs" style={{ color: labelText }}>{entry.name}:</span>
+            <span className="text-xs font-semibold" style={{ color: isDark ? '#fff' : '#111' }}>
+              {entry.value}
+              {entry.name === 'Temp' ? '°C' : entry.name === 'Wind' ? ' km/h' : '%'}
+            </span>
           </div>
         ))}
       </div>
@@ -38,38 +63,43 @@ export function HourlyChart({ data }: HourlyChartProps) {
   };
 
   return (
-    <div className="rounded-2xl bg-white/5 border border-white/10 p-5 backdrop-blur-sm">
-      <h3 className="text-white/60 text-sm font-medium uppercase tracking-wider mb-4">
-        Hourly Forecast (24h)
+    <div
+      className="rounded-2xl p-4 sm:p-5"
+      style={{
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        boxShadow: 'var(--shadow)',
+      }}
+    >
+      <h3 className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: 'var(--text-3)' }}>
+        Hourly Forecast · 24h
       </h3>
-      <ResponsiveContainer width="100%" height={220}>
-        <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+      <ResponsiveContainer width="100%" height={200}>
+        <LineChart data={chartData} margin={{ top: 5, right: 5, left: -25, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
           <XAxis
             dataKey="time"
-            tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }}
+            tick={{ fill: axisColor, fontSize: 10 }}
             tickLine={false}
             axisLine={false}
             interval={3}
           />
           <YAxis
             yAxisId="temp"
-            tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }}
+            tick={{ fill: axisColor, fontSize: 10 }}
             tickLine={false}
             axisLine={false}
           />
           <YAxis
             yAxisId="rain"
             orientation="right"
-            tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }}
+            tick={{ fill: axisColor, fontSize: 10 }}
             tickLine={false}
             axisLine={false}
             domain={[0, 100]}
           />
           <Tooltip content={<CustomTooltip />} />
-          <Legend
-            wrapperStyle={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}
-          />
+          <Legend wrapperStyle={{ color: axisColor, fontSize: '11px', paddingTop: '8px' }} />
           <Line
             yAxisId="temp"
             type="monotone"
